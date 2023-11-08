@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ domain }}
+{% endblock %}
+
+{% block main %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.3/chart.min.js" integrity="sha512-fMPPLjF/Xr7Ga0679WgtqoSyfUoQgdt8IIxJymStR5zV3Fyb6B3u/8DcaZ6R6sXexk5Z64bCgo2TYyn760EdcQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js" integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+<h1 id='title'>Site analytics for <a href="https://{{ domain }}">{{ domain }}</a></h1>
+<div class='graph-actions'>
+    <form action="/{{ domain }}" method="get">
+        <select id='type' name="type" class="form-select form-select-sm" aria-label=".form-select-sm example">
+            <option value="month" selected hidden>Select</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+        </select>
+        <input id="value" name="value" class="form-control form-control-sm" type="text" />
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+    
+</div>
+
+<div class='graph-wrapper'>
+    <canvas id="line-chart"></canvas>
+</div>
+
+<div class='table-wrapper'>
+    
+    <!-- device -->
+    <table class="table table-striped">
+            <tbody>
+                <thead class="thead-dark">
+                    <tr>
+                        <td>Devices</td>
+                    </tr>
+                </thead>
+                {% for i in device %}
+                    {% if i[1] %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                {{ i[1] }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                (Self)
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+    </table>
+
+    <!-- Browsers -->
+    <table class="table table-striped">
+            <tbody>
+                <thead class="thead-dark">
+                    <tr>
+                        <td>Browsers</td>
+                    </tr>
+                </thead>
+                {% for i in browser %}
+                    {% if i[1] %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                {{ i[1] }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                (Self)
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+    </table>
+
+    <!-- location -->
+    <table class="table table-striped">
+            <tbody>
+                <thead class="thead-dark">
+                    <tr>
+                        <td>Locations</td>
+                    </tr>
+                </thead>
+                {% for i in location %}
+                    {% if i[1] %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                {{ i[1] }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                (Self)
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+    </table>
+</div>
+
+<div class='table-wrapper'>
+
+    <!-- referrals -->
+    <table class="table table-striped">
+            <tbody>
+                <thead class="thead-dark">
+                    <tr>
+                        <td>Referrals</td>
+                    </tr>
+                </thead>
+                {% for i in referrer %}
+                    {% if i[1] %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                {{ i[1] }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                (Self)
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+    </table>
+
+    <!-- routes -->
+    <table class="table table-striped">
+            <tbody>
+                <thead class="thead-dark">
+                    <tr>
+                        <td>Routes</td>
+                    </tr>
+                </thead>
+                {% for i in route %}
+                    {% if i[1] %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                {{ i[1] }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td>
+                                <span class='count'>{{ i[0] }}</span>
+                                (Self)
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+    </table>
+</div>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
+
+
+<script>
+    /* ------------------------------------form script */
+    $('#type').on("change", () => { // sets placeholder value of value input when select is set
+        let tmp = $('#type').find(":selected").text();
+        $('#value').attr("placeholder", `Set ${tmp} (default: Now)`);
+    })
+
+    /* -------------------------------------graph script */
+    function daysInMonth(month, year) {
+        return new Date(year, month, 0).getDate();
+    }
+    function getMonthName(monthNumber) {
+      const date = new Date();
+      date.setMonth(monthNumber - 1);
+    
+      return date.toLocaleString('en-US', { month: 'long' });
+    }
+
+
+    let hits = [];
+    {% for i in hits %}
+        hits.push( "{{ i[0] }}" )
+    {% endfor %}
+    
+    let typ = "{{ type[0] }}";
+    let value = "{{ type[1] }}";
+
+    // x axis dataset
+    let dataSet = {};
+    
+    if (typ === "month") { // does the data set for the graph if type is month
+        
+        for (let x=1; x<=daysInMonth(value, new Date().getFullYear()); x++) {
+            dataSet[x] = 0;
+        }
+
+        /* gets number of hits for each distinct day */
+        for (let x=0; x<hits.length; x++) {
+            let date = hits[x].split(" ")[0].split("-");
+            let day = date[2];
+            
+            dataSet[day] += 1;
+        }
+
+        // set title to include month
+        $("#title").html($("#title").html() + ` in ${getMonthName(value)}`);
+    }
+    else if (typ === "year") { // does the data set for the graph if type is year
+
+        for (let x=1; x<=12; x++) {
+            dataSet[getMonthName(x)] = 0;
+        }
+        console.log(dataSet)
+        
+        for (let x=0; x<hits.length; x++) {
+            let date = hits[x].split(" ")[0].split("-");
+            let month = date[1];
+            
+            dataSet[getMonthName(month)] += 1;
+        }
+
+        // set title to include year
+        $("#title").html($("#title").html() + ` in ${value}`);
+    }
+    
+	new Chart(document.getElementById("line-chart"), {
+		type : 'line',
+		data : {
+			labels : Object.keys(dataSet),
+			datasets : [
+					{
+						data : Object.values(dataSet),
+						label : "Page Hits",
+						borderColor : "#3cba9f",
+						fill : true,
+                        tension: 0.1
+					}]
+		},
+		options : {
+			title : {
+				display : true,
+				text : 'Page Hits'
+			}
+		}
+	});
+</script>
+
+{% endblock %}
